@@ -28,13 +28,16 @@ Official references:
 4. Keep the `[ai]` binding enabled. Do not select a Paid usage model.
 5. Configure the Worker secret `BOOTSTRAP_SECRET` with a long, randomly generated value. Never commit this value to GitHub.
 6. Set `ALLOWED_ORIGINS` to the exact frontend origin. For the current Pages site this is `https://brollinsgmurimi.github.io`.
-7. Deploy the Worker from the repository root with Wrangler, then apply the D1 migration:
-   - `npx wrangler d1 migrations apply bro-llins-ai --remote`
-   - `npx wrangler deploy`
-8. Open the Worker URL and check `/api/health`. It should return JSON with `ok: true` and `ai_configured: true`.
-9. In Bro-llins AI Settings, enter the Worker URL and test the connection.
-10. Choose **First-time owner setup** to create the owner account. The bootstrap secret must match the Worker secret. After the first owner is created, bootstrap is permanently closed.
-11. Sign in as owner and create invitations from Settings.
+7. Add these GitHub Actions repository secrets under Settings → Secrets and variables → Actions:
+   - `CLOUDFLARE_API_TOKEN` (scoped to this Cloudflare account with Workers Scripts Edit and D1 Edit permissions)
+   - `CLOUDFLARE_ACCOUNT_ID`
+   - `D1_DATABASE_ID`
+   - `BOOTSTRAP_SECRET` (a long random value that you keep private)
+8. Merge the reviewed development changes only when you are ready to publish the new frontend. Then open Actions → Deploy Bro-llins AI API (manual) → Run workflow. The workflow applies the D1 migration, sets the bootstrap secret and deploys the Worker.
+9. Open the Worker URL and check `/api/health`. It should return JSON with `ok: true` and `ai_configured: true`.
+10. In Bro-llins AI Settings, enter the Worker URL and test the connection.
+11. Choose **First-time owner setup** to create the owner account. The bootstrap secret must match the Worker secret. After the first owner is created, bootstrap is permanently closed.
+12. Sign in as owner and create invitations from Settings.
 
 The owner setup secret and account password must never be shared in chat, committed to Git, or placed in frontend JavaScript. Store them in a password manager.
 
