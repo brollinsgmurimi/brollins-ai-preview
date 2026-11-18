@@ -24,7 +24,7 @@ Official references:
 
 1. Sign in to Cloudflare and confirm the account is on the **Workers Free** plan.
 2. Create a D1 database named `bro-llins-ai`.
-3. Copy its database ID into `wrangler.toml`, replacing `REPLACE_WITH_YOUR_D1_DATABASE_ID`.
+3. Keep the database name exactly `bro-llins-ai`. The deployment workflow discovers its database ID automatically; you do not need a `D1_DATABASE_ID` GitHub secret.
 4. Keep the `[ai]` binding enabled. Do not select a Paid usage model.
 5. Configure the Worker secret `BOOTSTRAP_SECRET` with a long, randomly generated value. Never commit this value to GitHub.
 6. Set `ALLOWED_ORIGINS` to the exact frontend origin. For the current Pages site this is `https://brollinsgmurimi.github.io`.
@@ -33,7 +33,7 @@ Official references:
    - `CLOUDFLARE_ACCOUNT_ID`
    - `D1_DATABASE_ID`
    - `BOOTSTRAP_SECRET` (a long random value that you keep private)
-8. Add the secrets before releasing the development branch. The API deployment workflow runs automatically when the reviewed changes are merged into `main`; it can also be rerun from Actions. The existing Pages workflow publishes the frontend, while the API workflow applies the D1 migration, sets the bootstrap secret and deploys the Worker.
+8. The API workflow looks up the D1 database by its exact name using the Cloudflare API, then applies the migration, sets the bootstrap secret and deploys the Worker. It runs automatically on pushes to `main` and can also be started manually from Actions.
 9. Open the Worker URL printed in the API deployment log and check `/api/health`. It should return JSON with `ok: true` and `ai_configured: true`.
 10. In Bro-llins AI Settings, enter the Worker URL and test the connection.
 11. Choose **First-time owner setup** to create the owner account. The bootstrap secret must match the Worker secret. After the first owner is created, bootstrap is permanently closed.
