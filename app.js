@@ -2,6 +2,7 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const API_KEY = "brollins_api_url", TOKEN_KEY = "brollins_session_token", USER_KEY = "brollins_session_user";
+  const OWNER_EMAIL = "brollinsgmurimi@gmail.com";
   let apiBase = (localStorage.getItem(API_KEY) || "").replace(/\/+$/, "");
   let token = sessionStorage.getItem(TOKEN_KEY) || "", user = null, conversations = [], activeId = null, busy = false;
   const esc = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -12,7 +13,7 @@
     if (!apiBase) throw new Error("Enter your deployed API URL first.");
     const headers = {"Content-Type":"application/json"};
     if (opts.authenticated !== false && token) headers.Authorization = "Bearer " + token;
-    const response = await fetch(apiBase + path, {method:opts.method || "GET", headers, body:opts.body ? JSON.stringify(opts.body) : undefined});
+    let response; try { response = await fetch(apiBase + path, {method:opts.method || "GET", headers, body:opts.body ? JSON.stringify(opts.body) : undefined}); } catch (_) { throw new Error("Cannot reach the Bro-llins AI server. Check the backend URL and your internet connection."); }
     let data = {}; try { data = await response.json(); } catch (_) {}
     if (!response.ok) {
       if (response.status === 401 && opts.authenticated !== false) { clearSession(); authView("login", "Your session expired. Please sign in again."); }
@@ -42,6 +43,7 @@
     if (mode === "bootstrap") fields += '<label>One-time owner setup secret</label><input id="authSecret" type="password" required placeholder="Server setup secret">';
     fields += '<button class="primary" id="authSubmit" type="submit">' + (mode === "login" ? "Sign in" : mode === "register" ? "Create account" : "Create owner account") + '</button>';
     $("authFields").innerHTML = fields;
+    if ($("authEmail")) { $("authEmail").value = OWNER_EMAIL; $("authEmail").readOnly = mode !== "register"; if (mode === "register") $("authEmail").readOnly = false; }
     $("authForm").onsubmit = async (event) => {
       event.preventDefault(); const button = $("authSubmit"); button.disabled = true; button.textContent = "Please wait…";
       try {
@@ -53,10 +55,19 @@
         const result = await api(path,{method:"POST",body:payload,authenticated:false});
         token = result.token; user = result.user;
         sessionStorage.setItem(TOKEN_KEY,token); sessionStorage.setItem(USER_KEY,JSON.stringify(user));
-        updateIdentity(); await loadConversations(); $("authGate").classList.add("hidden");
-        setStatus("Connected · private account",true); $("modePill").textContent = "● Connected";
+        updateIdentity();
+        $("authGate").classList.add("hidden");
+        setStatus("Signed in · loading workspace…",true); $("modePill").textContent = "● Connected";
+        try {
+          await loadConversations();
+          setStatus("Connected · private account",true);
+        } catch (loadError) {
+          $("messages").innerHTML = welcome;
+          addBubble("assistant","You are signed in, but your conversations could not be loaded: " + loadError.message + " Please refresh or check the backend connection in Settings.");
+          setStatus("Signed in · workspace sync issue",false);
+        }
       } catch (error) { $("authMessage").textContent = error.message; }
-      finally { if ($("authSubmit")) $("authSubmit").disabled = false; }
+      finally { if ($("authSubmit")) { $("authSubmit").disabled = false; $("authSubmit").textContent = mode === "login" ? "Sign in" : mode === "register" ? "Create account" : "Create owner account"; } }
     };
     $("authGate").classList.remove("hidden");
   }
@@ -153,7 +164,7 @@
     const footer = document.querySelector(".composerfoot span");
     if (footer) footer.textContent = "Private account · Conversations saved securely";
     updateIdentity();
-    if (!apiBase) { setStatus("Backend API address required",false); authView("login","Enter your deployed backend address, then choose Save and test API."); return; }
+    if (!apiBase) { setStatus("Backend API address required",false); authView("login","The backend is not connected yet. Enter the deployed Worker URL in the field below and select Save and test API."); return; }
     try {
       const health = await api("/api/health",{authenticated:false});
       setStatus(health.ai_configured ? "API online · AI binding detected" : "API online · AI not configured",true);
