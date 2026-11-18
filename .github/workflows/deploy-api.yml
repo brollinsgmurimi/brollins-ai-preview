@@ -1,6 +1,8 @@
 name: Deploy Bro-llins AI API (manual)
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
