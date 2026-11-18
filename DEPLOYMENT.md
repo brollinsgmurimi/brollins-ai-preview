@@ -33,8 +33,8 @@ Official references:
    - `CLOUDFLARE_ACCOUNT_ID`
    - `D1_DATABASE_ID`
    - `BOOTSTRAP_SECRET` (a long random value that you keep private)
-8. Merge the reviewed development changes only when you are ready to publish the new frontend. Then open Actions → Deploy Bro-llins AI API (manual) → Run workflow. The workflow applies the D1 migration, sets the bootstrap secret and deploys the Worker.
-9. Open the Worker URL and check `/api/health`. It should return JSON with `ok: true` and `ai_configured: true`.
+8. Add the secrets before releasing the development branch. The API deployment workflow runs automatically when the reviewed changes are merged into `main`; it can also be rerun from Actions. The existing Pages workflow publishes the frontend, while the API workflow applies the D1 migration, sets the bootstrap secret and deploys the Worker.
+9. Open the Worker URL printed in the API deployment log and check `/api/health`. It should return JSON with `ok: true` and `ai_configured: true`.
 10. In Bro-llins AI Settings, enter the Worker URL and test the connection.
 11. Choose **First-time owner setup** to create the owner account. The bootstrap secret must match the Worker secret. After the first owner is created, bootstrap is permanently closed.
 12. Sign in as owner and create invitations from Settings.
