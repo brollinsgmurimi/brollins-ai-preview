@@ -1,0 +1,17 @@
+name = "bro-llins-ai-api"
+main = "src/index.js"
+compatibility_date = "2026-11-18"
+workers_dev = true
+preview_urls = false
+
+[vars]
+ALLOWED_ORIGINS = "https://brollinsgmurimi.github.io"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bro-llins-ai"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"
