@@ -179,7 +179,7 @@ async function conversations(request, env, user, path) {
       if(!answer) throw new Error("Empty model response");
     } catch(err) {
       const detail=String(err?.message||err);
-      if(/3036|daily free allocation|neurons|quota/i.test(detail)) throw new HttpError(429,"FREE_AI_QUOTA_EXHAUSTED","The free AI allowance is exhausted. No paid fallback was attempted. Try again after the allowance resets.");
+      if(/3036|5035|daily free allocation|neurons|quota|free allocation/i.test(detail)) throw new HttpError(429,"FREE_AI_QUOTA_EXHAUSTED","The free AI allowance is exhausted. No paid fallback was attempted. Try again after the allowance resets.");
       if(/3040|capacity|busy/i.test(detail)) throw new HttpError(503,"AI_CAPACITY_UNAVAILABLE","The free AI service is temporarily busy.");
       console.error("Workers AI error",detail.slice(0,200));
       throw new HttpError(503,"AI_UNAVAILABLE","The free AI service is unavailable. No paid fallback was attempted.");
