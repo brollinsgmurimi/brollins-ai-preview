@@ -108,12 +108,17 @@ async function register(request, env) {
   const e = email(b.email), p = password(b.password), name = String(b.display_name || "").trim().slice(0, 80);
   if (!name) throw new HttpError(400, "INVALID_NAME", "Enter a display name.");
   const id = hex(random(16)), salt = hex(random(16)), digest = await passwordHash(p, salt);
+  let results;
   try {
-    await env.DB.batch([
-      env.DB.prepare("INSERT INTO users(id,email,display_name,password_salt,password_hash,role,status,created_at) VALUES(?,?,?,?,?,'member','active',?)").bind(id,e,name,salt,digest,now()),
-      env.DB.prepare("UPDATE invitations SET used_at=? WHERE id=? AND used_at IS NULL").bind(now(),invite.id)
+    const time = now();
+    results = await env.DB.batch([
+      env.DB.prepare("INSERT INTO users(id,email,display_name,password_salt,password_hash,role,status,created_at) SELECT ?,?,?,?,?, 'member','active',? WHERE EXISTS (SELECT 1 FROM invitations WHERE id=? AND used_at IS NULL AND expires_at>?)").bind(id,e,name,salt,digest,time,invite.id,time),
+      env.DB.prepare("UPDATE invitations SET used_at=? WHERE id=? AND used_at IS NULL AND expires_at>?").bind(time,invite.id,time)
     ]);
   } catch { throw new HttpError(409, "REGISTRATION_CONFLICT", "Email is already registered or invitation has been used."); }
+  if (!results || !results[0] || !results[0].meta || results[0].meta.changes !== 1) {
+    throw new HttpError(403, "INVITATION_INVALID", "This invitation has already been used or expired.");
+  }
   return json({ user: { id, email: e, display_name: name, role: "member" }, ...await session(env.DB, id) }, 201);
 }
 async function login(request, env) {
