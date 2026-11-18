@@ -23,15 +23,13 @@ Official references:
 ## Cloudflare setup (one-time account-owner action)
 
 1. Sign in to Cloudflare and confirm the account is on the **Workers Free** plan.
-2. Create a D1 database named `bro-llins-ai`.
-3. Keep the database name exactly `bro-llins-ai`. The deployment workflow discovers its database ID automatically; you do not need a `D1_DATABASE_ID` GitHub secret.
+2. Create a D1 database named exactly `bro-llins-ai`. The deployment workflow discovers its database ID automatically; you do not need a `D1_DATABASE_ID` GitHub secret.
 4. Keep the `[ai]` binding enabled. Do not select a Paid usage model.
 5. Configure the Worker secret `BOOTSTRAP_SECRET` with a long, randomly generated value. Never commit this value to GitHub.
 6. Set `ALLOWED_ORIGINS` to the exact frontend origin. For the current Pages site this is `https://brollinsgmurimi.github.io`.
 7. Add these GitHub Actions repository secrets under Settings → Secrets and variables → Actions:
-   - `CLOUDFLARE_API_TOKEN` (scoped to this Cloudflare account with Workers Scripts Edit and D1 Edit permissions)
+   - `CLOUDFLARE_API_TOKEN` (scoped to this Cloudflare account with Workers Scripts Edit, D1 Read and D1 Edit permissions)
    - `CLOUDFLARE_ACCOUNT_ID`
-   - `D1_DATABASE_ID`
    - `BOOTSTRAP_SECRET` (a long random value that you keep private)
 8. The API workflow looks up the D1 database by its exact name using the Cloudflare API, then applies the migration, sets the bootstrap secret and deploys the Worker. It runs automatically on pushes to `main` and can also be started manually from Actions.
 9. Open the Worker URL printed in the API deployment log and check `/api/health`. It should return JSON with `ok: true` and `ai_configured: true`.
