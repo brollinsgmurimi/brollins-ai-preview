@@ -53,7 +53,7 @@
         const result = await api(path,{method:"POST",body:payload,authenticated:false});
         token = result.token; user = result.user;
         sessionStorage.setItem(TOKEN_KEY,token); sessionStorage.setItem(USER_KEY,JSON.stringify(user));
-        $("authGate").classList.add("hidden"); updateIdentity(); await loadConversations();
+        updateIdentity(); await loadConversations(); $("authGate").classList.add("hidden");
         setStatus("Connected · private account",true); $("modePill").textContent = "● Connected";
       } catch (error) { $("authMessage").textContent = error.message; }
       finally { if ($("authSubmit")) $("authSubmit").disabled = false; }
@@ -160,7 +160,7 @@
       if (token) {
         try {
           const result = await api("/api/me"); user = result.user; updateIdentity();
-          $("authGate").classList.add("hidden"); await loadConversations();
+          await loadConversations(); $("authGate").classList.add("hidden");
           if (pill) pill.textContent = "● Connected";
         } catch (_) { clearSession(); authView("login","Please sign in to continue."); }
       } else authView("login");
