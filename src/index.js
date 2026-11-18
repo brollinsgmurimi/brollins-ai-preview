@@ -94,7 +94,9 @@ async function bootstrap(request, env) {
   if (count.n) throw new HttpError(409, "BOOTSTRAP_CLOSED", "The owner account already exists.");
   const b = await body(request);
   if (b.bootstrap_secret !== env.BOOTSTRAP_SECRET) throw new HttpError(403, "INVALID_BOOTSTRAP_SECRET", "Owner setup could not be authorized.");
-  const e = email(b.email), p = password(b.password), name = String(b.display_name || "Owner").trim().slice(0, 80) || "Owner";
+  const e = email(b.email);
+  if (env.OWNER_EMAIL && e !== String(env.OWNER_EMAIL).trim().toLowerCase()) throw new HttpError(403, "OWNER_EMAIL_MISMATCH", "The first owner account must use the configured primary email address.");
+  const p = password(b.password), name = String(b.display_name || "Owner").trim().slice(0, 80) || "Owner";
   const id = hex(random(16)), salt = hex(random(16)), digest = await passwordHash(p, salt);
   await env.DB.prepare("INSERT INTO users(id,email,display_name,password_salt,password_hash,role,status,created_at) VALUES(?,?,?,?,?,'admin','active',?)")
     .bind(id, e, name, salt, digest, now()).run();
