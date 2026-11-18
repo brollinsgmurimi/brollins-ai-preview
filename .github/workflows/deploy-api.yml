@@ -29,11 +29,27 @@ jobs:
             echo "Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID GitHub Actions secret."
             exit 1
           fi
-          response=$(curl --fail --silent --show-error \
+          auth_response=$(curl --silent --show-error \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/user/tokens/verify")
+          if [ "$(printf '%s' "$auth_response" | jq -r '.success // false')" != "true" ]; then
+            echo "Cloudflare rejected the API token. Create a fresh token, verify it, and update the CLOUDFLARE_API_TOKEN GitHub secret. Do not paste the token into chat or commit it."
+            printf '%s' "$auth_response" | jq -c '{errors: [.errors[]? | {code, message}], messages: [.messages[]? | {code, message}]}'
+            exit 1
+          fi
+          response=$(curl --silent --show-error \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" \
+            -w '\\nHTTP_STATUS:%{http_code}' \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database")
-          D1_DATABASE_ID=$(printf '%s' "$response" | jq -r '.result[]? | select(.name == "bro-llins-ai") | .uuid' | head -n 1)
+          http_status=$(printf '%s' "$response" | sed -n 's/^HTTP_STATUS://p')
+          response_body=$(printf '%s' "$response" | sed '/^HTTP_STATUS:/d')
+          if [ "$http_status" != "200" ] || [ "$(printf '%s' "$response_body" | jq -r '.success // false')" != "true" ]; then
+            echo "Cloudflare token verification passed, but D1 database access failed. Check that CLOUDFLARE_ACCOUNT_ID is the account containing the database and that the token has Account D1 Read permission."
+            printf '%s' "$response_body" | jq -c '{errors: [.errors[]? | {code, message}], messages: [.messages[]? | {code, message}]}'
+            exit 1
+          fi
+          D1_DATABASE_ID=$(printf '%s' "$response_body" | jq -r '.result[]? | select(.name == "bro-llins-ai") | .uuid' | head -n 1)
           if [ -z "$D1_DATABASE_ID" ] || [ "$D1_DATABASE_ID" = "null" ]; then
             echo "Could not find the D1 database named bro-llins-ai. Confirm it exists and the Cloudflare token has Account D1 Read and D1 Edit permissions."
             exit 1
