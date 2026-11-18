@@ -20,14 +20,25 @@ jobs:
           node-version: 22
       - name: Install Wrangler
         run: npm install --global wrangler@4
-      - name: Configure D1 database binding
+      - name: Discover D1 database and configure binding
         env:
-          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -z "$D1_DATABASE_ID" ]; then
-            echo "Missing D1_DATABASE_ID GitHub Actions secret."
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID GitHub Actions secret."
             exit 1
           fi
+          response=$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database")
+          D1_DATABASE_ID=$(printf '%s' "$response" | jq -r '.result[]? | select(.name == "bro-llins-ai") | .uuid' | head -n 1)
+          if [ -z "$D1_DATABASE_ID" ] || [ "$D1_DATABASE_ID" = "null" ]; then
+            echo "Could not find the D1 database named bro-llins-ai. Confirm it exists and the Cloudflare token has Account D1 Read and D1 Edit permissions."
+            exit 1
+          fi
+          echo "D1_DATABASE_ID=$D1_DATABASE_ID" >> "$GITHUB_ENV"
           sed -i "s/REPLACE_WITH_YOUR_D1_DATABASE_ID/$D1_DATABASE_ID/" wrangler.toml
       - name: Apply D1 migrations
         env:
