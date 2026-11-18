@@ -1,0 +1,39 @@
+name: Bro-llins AI checks
+
+on:
+  push:
+    branches:
+      - "feature/**"
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check frontend JavaScript
+        run: node --check app.js
+      - name: Check Worker JavaScript
+        run: node --check src/index.js
+      - name: Validate D1 migration
+        run: |
+          python3 - <<'PY'
+          import sqlite3
+          from pathlib import Path
+          db = sqlite3.connect(":memory:")
+          db.executescript(Path("migrations/0001_initial.sql").read_text())
+          names = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+          required = {"users", "invitations", "sessions", "conversations", "messages", "daily_usage", "rate_limits"}
+          missing = required - names
+          assert not missing, f"Missing schema tables: {sorted(missing)}"
+          print("D1 migration is valid; required tables exist.")
+          PY
