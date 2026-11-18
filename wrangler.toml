@@ -14,5 +14,5 @@ binding = "AI"
 [[d1_databases]]
 binding = "DB"
 database_name = "bro-llins-ai"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "20d2967d-8b05-43c1-9555-d4e598b1bef7"
 migrations_dir = "migrations"
